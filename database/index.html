@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bond Dipole Moment Database</title>
+<style>
+  :root{--bg:#fbfaf7;--ink:#1f2328;--muted:#5d6670;--line:#e3e0d8;--card:#fff;--accent:#2f5d8a;--accent-soft:#e7eef6;--warn:#8a5a00;--warn-soft:#fbf1dc}
+  @media (prefers-color-scheme:dark){:root{--bg:#16181b;--ink:#e6e6e3;--muted:#9aa2ab;--line:#2c3036;--card:#1d2024;--accent:#8fb6de;--accent-soft:#1f2b38;--warn:#e0b45c;--warn-soft:#2e2717}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 20px;max-width:760px}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap}
+  .tab{background:none;border:0;padding:10px 14px;font:inherit;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  input[type=search],select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
+  input[type=search]{flex:1;min-width:200px}
+  button.btn{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
+  button.btn:hover{border-color:var(--accent)}
+  .note{font-size:13px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap;background:var(--bg)}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  #tableHost{overflow-x:auto}
+  td:last-child{min-width:180px}
+  td.bond{font-weight:600;white-space:nowrap}
+  .pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+  .spread{color:var(--warn)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-top:18px}
+  .panel h2{font-size:16px;margin:0 0 8px}
+  .panel ul{margin:6px 0 0;padding-left:20px}
+  .warnbox{background:var(--warn-soft);border-left:3px solid var(--warn);padding:10px 14px;border-radius:4px;margin:0 0 16px;font-size:14px}
+  a{color:var(--accent)}
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+  #toast.show{opacity:1}
+  textarea{width:100%;height:140px;font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);padding:8px;margin-top:8px}
+  .hidden{display:none}
+  .fitgrid{display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:start}
+  @media (max-width:760px){.fitgrid{grid-template-columns:1fr}}
+  .fitside{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto}
+  .fitside h3,.fitmain h3{font-size:15px;margin:0 0 6px}
+  .fitmain h3{margin-top:22px}.fitmain h3:first-of-type{margin-top:0}
+  .refrow{display:flex;justify-content:space-between;align-items:center;margin:5px 0;font-weight:600;font-size:14px}
+  .refrow input{width:78px;font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);text-align:right}
+  .mgroup{margin:8px 0 4px}.ghead{font-weight:600;font-size:13px;display:block;margin-bottom:2px}
+  .mrow{display:inline-flex;align-items:center;gap:4px;font-size:13px;margin:2px 10px 2px 0;font-variant-numeric:tabular-nums}
+  button.btn.sm{padding:3px 10px;font-size:13px}
+  .dbar{position:relative;display:inline-block;width:120px;height:10px;vertical-align:middle;background:linear-gradient(var(--line),var(--line)) center/1px 100% no-repeat}
+  .dbar span{position:absolute;top:1px;height:8px;border-radius:2px;background:var(--accent);opacity:.7}
+
+  .viz-root{--series-1:#2a78d6;--series-2:#eb6834;--series-3:#1baf7a;--grid:#e9e7e1;--axis:#8a8a85;--plot-surface:#fcfcfb}
+  @media (prefers-color-scheme:dark){.viz-root{--series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;--grid:#2c2f33;--axis:#7c828a;--plot-surface:#1a1a19}}
+  .viz-root svg{display:block;width:100%;height:auto;background:var(--plot-surface);border:1px solid var(--line);border-radius:8px}
+  .viz-root .gl{stroke:var(--grid);stroke-width:1}
+  .viz-root .ax{stroke:var(--axis);stroke-width:1}
+  .viz-root text{fill:var(--muted);font-size:12px}
+  .viz-root text.lbl{fill:var(--ink);font-size:11.5px}
+  .viz-root text.ttl{fill:var(--ink);font-size:13px}
+  .viz-root .pt{stroke:var(--plot-surface);stroke-width:2;cursor:pointer}
+  .viz-root .pt:hover,.viz-root .pt.on{stroke:var(--ink)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 10px;font-size:13px;color:var(--ink)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend svg{width:14px;height:14px}
+  #tip{position:fixed;pointer-events:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.12);opacity:0;transition:opacity .1s;z-index:5;max-width:260px}
+  #tip b{font-size:14px}
+  .plotnote{font-size:13px;color:var(--muted);margin-top:10px;max-width:900px}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bond Dipole Moment Database</h1>
+  <p class="sub">Average bond moments, aromatic group moments and reference molecular moments, in debye (1 D = 3.336 × 10⁻³⁰ C·m). Each value lists its source set, so you can see how much the published averages differ from one table to another.</p>
+
+  <div class="warnbox"><strong>Sign convention.</strong> Bond moments are given as magnitudes, with the negative end on the more electronegative atom (written A⁺–B⁻). The C–H moment is set by convention: these tables assume C⁻–H⁺. Group moments follow the Williams sign convention: negative means the group is the negative end of the molecule (electron-withdrawing) and positive means it is electron-donating, relative to H = 0.</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="bonds" aria-selected="true">Bond moments</button>
+    <button class="tab" role="tab" data-view="compare" aria-selected="false">Compare sets</button>
+    <button class="tab" role="tab" data-view="diatomics" aria-selected="false">Diatomics (CCCBDB)</button>
+    <button class="tab" role="tab" data-view="plot" aria-selected="false">μ vs Δχ plot</button>
+    <button class="tab" role="tab" data-view="fit" aria-selected="false">Decompose &amp; transfer</button>
+    <button class="tab" role="tab" data-view="groups" aria-selected="false">Group moments</button>
+    <button class="tab" role="tab" data-view="molecules" aria-selected="false">Reference molecules</button>
+    <button class="tab" role="tab" data-view="sources" aria-selected="false">Sources &amp; notes</button>
+  </div>
+
+  <div id="tableView">
+    <div class="bar">
+      <input type="search" id="q" placeholder="Search (e.g. C–Cl, O, carbonyl)…" aria-label="Search">
+      <select id="setFilter" aria-label="Filter by source set"></select>
+      <button class="btn" id="csvBtn">Copy as CSV</button>
+    </div>
+    <p class="note hidden" id="diatNote">For a diatomic, the measured molecular moment <em>is</em> the bond moment. These are gas-phase experimental magnitudes. The sign is not given, so the "δ⁻ end" column is only the electronegativity prediction (CO is the classic exception). μe = equilibrium value, μ0 = ground vibrational state. MW = microwave, MB = molecular beam, DR = double resonance. Open-shell, excited-state and ion rows are flagged; for comparing bond polarities, use the closed-shell ground states.</p>
+    <div id="tableHost"></div>
+    <p class="note" id="count"></p>
+    <div id="csvBox" class="hidden"><p class="note">If copying is blocked here, select all the text below and copy it yourself.</p><textarea id="csvText" readonly></textarea></div>
+  </div>
+
+  <div id="plotView" class="hidden viz-root">
+    <h2 style="font-size:17px;margin:4px 0 4px">Diatomic dipole moment vs electronegativity difference</h2>
+    <p class="note" style="margin:0 0 12px">39 closed-shell, ground-state main-group diatomics from the CCCBDB experimental list. Hover a point for details.</p>
+    <div class="legend" id="plotLegend"></div>
+    <div id="plotHost"></div>
+    <p class="plotnote">Two regimes stand out. The alkali compounds (circles) have moments of 6–11 D, a large fraction of what a full electron charge separated by the bond length would give, and they rise with bond length (Li → K, F → I) more than with Δχ. The p-block molecules (triangles) stay below about 3.5 D, and within a family μ tracks Δχ only roughly: CO has Δχ = 0.89 but μ = 0.11 D, with the polarity reversed (C⁻O⁺). Δχ predicts the direction of polarity much better than its size. Bond lengths aren't in this dataset, so percent ionic character (μ / e·r) isn't plotted.</p>
+  </div>
+
+  <div id="fitView" class="hidden"></div>
+
+  <div id="sourcesView" class="hidden">
+    <div class="panel">
+      <h2>Source sets</h2>
+      <ul id="srcList"></ul>
+    </div>
+    <div class="panel">
+      <h2>Standard references not yet included</h2>
+      <p class="note">These books aren't freely available online, so their tables couldn't be checked directly. Values transcribed from library copies can be added as new source sets.</p>
+      <ul>
+        <li>C. P. Smyth, <em>Dielectric Behavior and Structure</em> (McGraw-Hill, 1955): bond-moment tables around pp. 237–244.</li>
+        <li>V. I. Minkin, O. A. Osipov &amp; Yu. A. Zhdanov, <em>Dipole Moments in Organic Chemistry</em> (Plenum, 1970), Ch. III §1 "Bond and Group Moments", p. 79 ff. <a href="https://doi.org/10.1007/978-1-4684-1770-8">doi:10.1007/978-1-4684-1770-8</a></li>
+        <li>O. Exner, <em>Dipole Moments in Organic Chemistry</em> (Thieme, 1975).</li>
+        <li>A. L. McClellan, <em>Tables of Experimental Dipole Moments</em>, vols. 1–3 (molecular moments).</li>
+        <li>C. P. Smyth, "Dipole induction effect and the moments of individual bonds," <em>Trans. Faraday Soc.</em> 30, 752 (1934). <a href="https://doi.org/10.1039/TF9343000752">doi:10.1039/TF9343000752</a></li>
+        <li>S. Böhm &amp; O. Exner, "Prediction of molecular dipole moments from bond moments: testing of the method by DFT calculations," <em>PCCP</em> 6, 510 (2004). <a href="https://doi.org/10.1039/B312595P">doi:10.1039/B312595P</a></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Using these values</h2>
+      <ul>
+        <li>The Diatomics tab leaves out homonuclear molecules (μ = 0) and the transition-metal species in the CCCBDB list (ScH, CuO, CuF).</li>
+        <li>Bond moments are additive only approximately. Induction between neighboring polar bonds is folded into the averages, so CH₃Cl (1.87 D) and CHCl₃ (1.01 D) can't both be reproduced from one fixed pair of C–H and C–Cl values.</li>
+        <li>Lone pairs aren't assigned separately, so their contribution is absorbed into the bond values for O–H, N–H, C–O and so on.</li>
+        <li>Hybridization matters: C(sp)–H and C(sp²)–X differ from the sp³ averages listed here.</li>
+        <li>Group moments, which were fitted to monosubstituted benzenes, usually predict disubstituted benzenes better than summing individual bond moments does.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="tip"></div>
+
+<script>
+const SOURCES = {
+  S: {name:"Smyth-type set (2 decimals)", short:"Smyth-type",
+      cite:"Table 2.2 \"Permanent dipole bond moments for representative chemical bonds\", quoted in a textbook excerpt indexed by Perlego. These values match the classic Smyth (1955) compilation.",
+      url:"https://www.perlego.com/index/chemistry/dipole-moment"},
+  T: {name:"Intro textbook set (1 decimal)", short:"Textbook",
+      cite:"Bond dipole table used in introductory organic texts (Pearson organic chemistry study guide; also chemistrylearner.com).",
+      url:"https://www.pearson.com/channels/organic-chemistry/study-guides/bonding-and-polarity-electronegativity-inductive-effect-and"},
+  E: {name:"Eucken–Meyer era values", short:"Eucken–Meyer",
+      cite:"Lecture notes on dipole moments (Dumkal College): C–H taken as 0.4 D following Eucken & Meyer, with the O–H and C–O values used for the methanol vector sum.",
+      url:"https://dumkalcollege.in/uploads/notice/dept_estore_13-12-2025_1765611465620.pdf"},
+  W: {name:"Williams (1929) aromatic group moments", short:"Williams 1929",
+      cite:"Group moments for monosubstituted benzenes computed by Williams (1929), as reproduced in the Dumkal College lecture notes.",
+      url:"https://dumkalcollege.in/uploads/notice/dept_estore_13-12-2025_1765611465620.pdf"},
+  O: {name:"OpenStax Organic Chemistry, Table 2.1", short:"OpenStax",
+      cite:"OpenStax Organic Chemistry §2.2, Table 2.1 \"Dipole Moments of Some Compounds\".",
+      url:"https://openstax.org/books/organic-chemistry/pages/2-2-polar-covalent-bonds-and-dipole-moments"},
+  H: {name:"Hydrogen halides (chemistrylearner)", short:"H–X molecules",
+      cite:"Dipole moment chart, chemistrylearner.com.",
+      url:"https://chemistrylearner.com/?p=9368"},
+  C: {name:"NIST CCCBDB experimental dipole list", short:"CCCBDB",
+      cite:"NIST Computational Chemistry Comparison and Benchmark Database (SRD 101), Experimental > Electrostatics > Dipole, read 6 Nov 2026. Each row also keeps CCCBDB's original reference code.",
+      url:"https://cccbdb.nist.gov/diplistx.asp"},
+  U: {name:"Encyclopædia Universalis", short:"Universalis",
+      cite:"Encyclopædia Universalis, \"Moments dipolaires\" §4 (CH₃Cl and CHCl₃ moments, used to show where additivity breaks down).",
+      url:"https://www.universalis.fr/encyclopedie/moments-dipolaires/4-moment-dipolaireet-structure-moleculaire/"}
+};
+
+// type: single, double, triple. neg = negative (more electronegative) end
+const BONDS = [
+  ["H–C","C","single",0.30,"S"],["H–C","C","single",0.4,"T"],["H–C","C","single",0.4,"E"],
+  ["H–N","N","single",1.31,"S"],["H–N","N","single",1.3,"T"],
+  ["H–O","O","single",1.53,"S"],["H–O","O","single",1.5,"T"],["H–O","O","single",1.6,"E"],
+  ["H–F","F","single",1.7,"T"],
+  ["H–Cl","Cl","single",1.1,"T"],
+  ["H–Br","Br","single",0.8,"T"],
+  ["H–I","I","single",0.4,"T"],
+  ["C–C","—","single",0,"T"],
+  ["C–N","N","single",0.22,"S"],["C–N","N","single",0.2,"T"],
+  ["C–O","O","single",0.86,"S"],["C–O","O","single",0.7,"T"],["C–O","O","single",0.7,"E"],
+  ["C–F","F","single",1.51,"S"],["C–F","F","single",1.6,"T"],
+  ["C–Cl","Cl","single",1.56,"S"],["C–Cl","Cl","single",1.5,"T"],
+  ["C–Br","Br","single",1.48,"S"],["C–Br","Br","single",1.4,"T"],
+  ["C–I","I","single",1.29,"S"],["C–I","I","single",1.2,"T"],
+  ["C=O","O","double",2.40,"S"],
+  ["C≡N","N","triple",3.60,"S"]
+].map(r=>({bond:r[0],neg:r[1],order:r[2],mu:r[3],src:r[4]}));
+
+const GROUPS = [
+  ["–NO₂",-3.9],["–CHO",-2.8],["–OH",-1.7],["–Cl",-1.5],["–Br",-1.5],["–COOH",-0.9],["–H",0.0],["–CH₃",0.4],["–NH₂",1.5]
+].map(g=>({group:g[0],mu:g[1],context:"C₆H₅–X (aromatic)",src:"W"}));
+
+const MOLS = [
+  ["NaCl","9.00","O","ionic (gas-phase ion pair)"],["CH₂O","2.33","O",""],["CH₃Cl","1.87","O",""],
+  ["H₂O","1.85","O",""],["CH₃OH","1.70","O",""],["CH₃CO₂H","1.70","O",""],["CH₃SH","1.52","O",""],
+  ["NH₃","1.47","O",""],["CH₃NH₂","1.31","O",""],["CO₂","0","O","symmetric"],["CH₄","0","O","symmetric"],
+  ["CH₃CH₃","0","O","symmetric"],["C₆H₆","0","O","symmetric"],
+  ["HF","1.78","H",""],["HCl","1.07","H",""],["HBr","0.79","H",""],["HI","0.38","H",""],
+  ["CHCl₃","1.01","U","compare with CH₃Cl to see non-additivity"]
+].map(m=>({mol:m[0],mu:parseFloat(m[1]),src:m[2],note:m[3]}));
+
+
+// CCCBDB experimental dipole list (read 2026-11-06). Columns: formula, state, mu, uncertainty, type, basis, method, reference squib
+const EN = {H:2.20,Li:0.98,Na:0.93,K:0.82,Ca:1.00,B:2.04,Al:1.61,Ga:1.81,C:2.55,Si:1.90,Ge:2.01,N:3.04,P:2.19,O:3.44,S:2.58,Se:2.55,F:3.98,Cl:3.16,Br:2.96,I:2.66,D:2.20};
+function atoms(f){return (f.replace("+","").match(/[A-Z][a-z]?/g)||[])}
+const TYPE_LABEL={closed:"Closed-shell ground state",radical:"Open-shell ground state",excited:"Excited state",ion:"Ion",isotopologue:"Isotopologue"};
+const DIATOMICS = [
+  ["LiH","1Σ","5.880","","closed","—","MB","NSRDS-NBS10"],
+  ["BH","1Σ","1.270","0.21","closed","—","—","1969Tho/Dal:1155"],
+  ["CH","2Π1/2","1.460","0.06","radical","—","—","1966Phe/Dal:3-4"],
+  ["NH+","2Π","1.477","0.02","ion","—","—","2012Mou/Red:012519-6"],
+  ["CN","2Σ","1.450","","radical","—","—","1968Tho/Dal:2815"],
+  ["OH","2Π","1.668","","radical","μ0","MW","NISTDiatomic"],
+  ["LiO","2Σ","6.843","","radical","—","—","1972Fre/Kle:1467"],
+  ["CO","1Σ","0.112","","closed","—","MW","NSRDS-NBS10"],
+  ["CO","3Π","1.375","","excited","—","—","1970Ste/Gam:3467-3482"],
+  ["NO","2Π","0.159","","radical","μ0","MB","1971Byf/Car:271"],
+  ["HF","1Σ","1.827","","closed","μ0","MB","NISTDiatomic"],
+  ["LiF","1Σ","6.284","","closed","μe","—","NISTdiatomic"],
+  ["BF","1Σ","0.500","0.2","closed","—","—","1971Lov/Joh:41"],
+  ["CF","2Π","0.645","","radical","—","—","NISTdiatomic"],
+  ["NF","3Σ","0.370","0.06","radical","μ0","DR","1974Hel/Hel(II/6)"],
+  ["FO","2Π","0.004","","radical","—","—","1992LBII/19c"],
+  ["NaH","1Σ","6.400","0.7","closed","—","—","1979Dag:2328"],
+  ["NaLi","1Σ","0.460","0.01","closed","μe","—","1972Gra/Dag:710"],
+  ["NaF","1Σ","8.123","0.0015","closed","—","—","NISTdiatomic"],
+  ["AlF","1Σ+","1.530","0.1","closed","μ0","MW","NISTdiatomic"],
+  ["SiO","1Σ","3.088","","closed","μe","MB","1970Ray/Mue:3458-3461"],
+  ["PN","1Σ","2.751","0.0008","closed","μe","MW","NISTdiatomic"],
+  ["PO","2Π","1.880","0.07","radical","μ0","MW","1988Kan/Yam:89"],
+  ["HS","2Π","0.758","","radical","μ0","—","NISTdiatomic"],
+  ["DS","2Π","0.757","","isotopologue","μ0","—","NISTdiatomic"],
+  ["SiS","1Σ","1.730","0.06","closed","μ0","MW","NISTdiatomic"],
+  ["CS","1Σ","1.958","0.005","closed","μ0","MW","1974Hel/Hel(II/6)"],
+  ["NS","2Π","1.810","0.02","radical","μ0","MW","NISTdiatomic"],
+  ["SO","3Σ","1.550","0.02","radical","μ0","MW","1971Byf/Car:271"],
+  ["SO","1Σ","1.310","0.045","excited","μ0","MW","1971Byf/Car:271"],
+  ["SF","2Π","0.794","0.012","radical","—","—","1973Ama/Hir:417"],
+  ["HCl","1Σ","1.093","","closed","μe","MB","NISTDiatomic"],
+  ["NaCl","1Σ","8.971","0.001","closed","μe","MW","NISTdiatomic"],
+  ["LiCl","1Σ","7.085","0.0013","closed","—","—","NISTdiatomic"],
+  ["ClO","2Π","1.239","","radical","—","—","NISTdiatomic"],
+  ["ClF","1Σ+","0.880","","closed","—","MW","NSRDS-NBS10"],
+  ["ArH+","1Σ","2.840","","ion","—","—","NISTdiatomic"],
+  ["NaK","1Σ","2.667","","closed","—","—","webbook"],
+  ["LiK","1Σ","3.450","","closed","—","—","webbook"],
+  ["KF","1Σ","8.558","","closed","μe","—","NISTdiatomic"],
+  ["KCl","1Σ","10.239","","closed","—","—","NISTdiatomic"],
+  ["CaCl","2Σ","4.265","0.02","radical","—","—","NISTdiatomic"],
+  ["GaF","1Σ","2.450","0.05","closed","μ0","MW","NISTdiatomic"],
+  ["GeO","1Σ","3.272","","closed","μe","—","NISTDiatomic"],
+  ["GeS","1Σ","2.000","","closed","μ0","—","NISTDiatomic"],
+  ["HSe","2Π","0.490","","radical","—","—","1971Byf/Car:271"],
+  ["GeSe","1Σ","1.648","","closed","μ0","—","NISTDiatomic"],
+  ["SeO","3Σ","2.010","","radical","—","—","1971Byf/Car:271"],
+  ["SeF","2Π","1.520","0.05","radical","—","—","1971Byf/Car:271"],
+  ["HBr","1Σ","0.827","","closed","μ0","—","NISTdiatomic"],
+  ["LiBr","1Σ","7.226","","closed","μe","—","NISTdiatomic"],
+  ["NaBr","1Σ","9.092","","closed","μe","—","NISTdiatomic"],
+  ["KBr","1Σ","10.603","","closed","μe","—","NISTdiatomic"],
+  ["BrO","2Π","1.610","","radical","—","—","1971Byf/Car:271"],
+  ["BrCl","1Σ","0.519","0.004","closed","μ0","MW","1978Nai/Hoe:153-156"],
+  ["BrF","1Σ","1.422","0.016","closed","μ0","MW","NISTdiatomic"],
+  ["HI","1Σ","0.448","0.0005","closed","μ0","—","NISTDiatomic"],
+  ["LiI","1Σ","7.429","","closed","—","—","NISTDiatomic"],
+  ["NaI","1Σ","9.236","","closed","—","—","NISTDiatomic"],
+  ["KI","1Σ","10.820","","closed","—","—","NISTDiatomic"],
+  ["IBr","1Σ","0.737","","closed","μ0","MW","NISTdiatomic"],
+  ["ICl","1Σ","1.207","0.003","closed","—","MB","1997Dur/Loi:477-484"],
+  ["IF","1Σ","1.948","0.020","closed","μ0","MW","1979Nai/Hoe:253-256"]
+].map(r=>{const [a,b]=atoms(r[0]);const ea=EN[a],eb=EN[b];
+  let pred="—",den=null; if(ea!=null&&eb!=null){den=Math.abs(ea-eb);pred=ea>eb?a:(eb>ea?b:"—")}
+  let note="";
+  if(r[0]==="CO"&&r[1]==="1Σ") note="Polarity is C⁻O⁺, opposite to the electronegativity prediction";
+  if(r[0]==="FO") note="Printed value 0.004 D; comment field reads 0.0004";
+  if(r[0]==="SiO") note="μ0 = 3.0982 D";
+  if(r[0]==="CO"&&r[1]==="3Π") note="Ω = 2; for Ω = 1, 1.37454 D";
+  if(r[0]==="DS") note="Deuterated HS";
+  return {mol:r[0],state:r[1],mu:parseFloat(r[2]),unc:r[3]?parseFloat(r[3]):null,unct:r[3],type:r[4],basis:r[5],method:r[6],ref:r[7],den,pred,note,src:"C"}});
+
+const VIEWS = {
+  bonds:{rows:()=>BONDS, cols:[
+    {k:"bond",l:"Bond",cls:"bond"},{k:"mu",l:"μ (D)",num:true,fmt:(v,r)=>v.toFixed(r.src==="S"?2:1)},
+    {k:"neg",l:"δ⁻ end"},{k:"order",l:"Bond order"},{k:"src",l:"Source set",fmt:v=>`<span class="pill">${SOURCES[v].short}</span>`,raw:v=>SOURCES[v].short}],
+    search:r=>[r.bond,r.neg,r.order,SOURCES[r.src].short,r.bond.includes("=")?"carbonyl double":"",r.bond.includes("≡")?"nitrile cyano triple":""].join(" ")},
+  compare:{rows:()=>{
+      const m={};BONDS.forEach(b=>{(m[b.bond]=m[b.bond]||{bond:b.bond,neg:b.neg,S:null,T:null,E:null});m[b.bond][b.src]=b.mu});
+      return Object.values(m).map(r=>{const v=[r.S,r.T,r.E].filter(x=>x!==null);r.mean=v.reduce((a,b)=>a+b,0)/v.length;r.spread=v.length>1?Math.max(...v)-Math.min(...v):null;return r});
+    }, cols:[
+    {k:"bond",l:"Bond",cls:"bond"},{k:"S",l:"Smyth-type",num:true,fmt:v=>v===null?"—":v.toFixed(2)},{k:"T",l:"Textbook",num:true,fmt:v=>v===null?"—":v.toFixed(1)},{k:"E",l:"Eucken–Meyer",num:true,fmt:v=>v===null?"—":v.toFixed(1)},
+    {k:"mean",l:"Mean",num:true,fmt:v=>v.toFixed(2),raw:v=>v.toFixed(2)},{k:"spread",l:"Spread",num:true,fmt:v=>v===null?"—":(v>=0.15?`<span class="spread">${v.toFixed(2)}</span>`:v.toFixed(2)),raw:v=>v===null?"":v.toFixed(2)}],
+    search:r=>r.bond+" "+r.neg, nofilter:true},
+  diatomics:{rows:()=>DIATOMICS, filterKey:"type", filterLabel:k=>TYPE_LABEL[k], allLabel:"All types", cols:[
+    {k:"mol",l:"Molecule",cls:"bond"},{k:"state",l:"State"},{k:"mu",l:"μ (D)",num:true,fmt:v=>v.toFixed(3),raw:v=>v.toFixed(3)},
+    {k:"unc",l:"±",num:true,fmt:(v,r)=>r.unct||"—",raw:v=>v==null?"":v},
+    {k:"den",l:"Δχ (Pauling)",num:true,fmt:v=>v==null?"—":v.toFixed(2),raw:v=>v==null?"":v.toFixed(2)},
+    {k:"pred",l:"δ⁻ end (by χ)"},
+    {k:"type",l:"Type",fmt:v=>`<span class="pill">${TYPE_LABEL[v]}</span>`,raw:v=>TYPE_LABEL[v]},
+    {k:"basis",l:"μe/μ0"},{k:"method",l:"Method"},{k:"ref",l:"Original ref."},{k:"note",l:"Note"}],
+    search:r=>[r.mol,r.state,TYPE_LABEL[r.type],r.ref,atoms(r.mol).join(" ")].join(" ")},
+  groups:{rows:()=>GROUPS, cols:[
+    {k:"group",l:"Group X",cls:"bond"},{k:"mu",l:"μ (D)",num:true,fmt:v=>(v>0?"+":"")+v.toFixed(1)},
+    {k:"context",l:"Context"},{k:"src",l:"Source set",fmt:v=>`<span class="pill">${SOURCES[v].short}</span>`,raw:v=>SOURCES[v].short}],
+    search:r=>r.group+" "+r.context},
+  molecules:{rows:()=>MOLS, cols:[
+    {k:"mol",l:"Molecule",cls:"bond"},{k:"mu",l:"μ (D)",num:true,fmt:v=>v===0?"0":v.toFixed(2)},
+    {k:"note",l:"Note"},{k:"src",l:"Source set",fmt:v=>`<span class="pill">${SOURCES[v].short}</span>`,raw:v=>SOURCES[v].short}],
+    search:r=>r.mol+" "+r.note}
+};
+function f2(v){return v===null?"—":v.toFixed(String(v).split(".")[1]?.length>1?2:1)}
+function plain(s){return s.replace(/[₀-₉]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x2080+48)).replace(/–/g,"-").replace(/≡/g,"#")}
+
+
+const ALK=new Set(["Li","Na","K"]), HAL=new Set(["F","Cl","Br","I"]);
+function klass(r){const a=atoms(r.mol);const nAlk=a.filter(x=>ALK.has(x)).length;
+  if(nAlk===1) return 0;                  // alkali halides & hydrides
+  if(a.includes("H")) return 1;           // other hydrides
+  return 2;}                              // p-block & alkali dimers
+const KLASS=[{name:"Alkali halides & hydrides",shape:"circle"},{name:"Hydrogen halides & BH",shape:"square"},{name:"p-block & alkali dimers",shape:"triangle"}];
+const LABELS=new Set(["CO","CS","SiO","PN","HF","HCl","HBr","HI","ICl","IF","BrF","ClF","LiF","KI","KBr","NaCl","LiH","NaLi","BF","AlF","GeO","NaK","LiK"]);
+function mark(shape,x,y,r){ if(shape==="circle") return `<circle cx="${x}" cy="${y}" r="${r}"/>`;
+  if(shape==="square") return `<rect x="${x-r*0.9}" y="${y-r*0.9}" width="${r*1.8}" height="${r*1.8}" rx="1.5"/>`;
+  const h=r*1.15; return `<path d="M${x},${y-h} L${x+h},${y+h*0.75} L${x-h},${y+h*0.75} Z"/>`;}
+let plotBuilt=false;
+function buildPlot(){ if(plotBuilt) return; plotBuilt=true;
+  const pts=DIATOMICS.filter(r=>r.type==="closed"&&r.den!=null).map(r=>({...r,k:klass(r)}));
+  $("plotLegend").innerHTML=KLASS.map((k,i)=>`<span><svg viewBox="-8 -8 16 16" style="fill:var(--series-${i+1})">${mark(k.shape,0,0,5.5)}</svg>${k.name} (${pts.filter(p=>p.k===i).length})</span>`).join("");
+  const W=960,H=560,m={l:58,r:24,t:18,b:52};
+  const xmax=3.2,ymax=11.5, X=v=>m.l+v/xmax*(W-m.l-m.r), Y=v=>H-m.b-v/ymax*(H-m.t-m.b);
+  let g="";
+  for(let v=0;v<=3.2+1e-9;v+=0.5){g+=`<line class="gl" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${H-m.b}"/><text x="${X(v)}" y="${H-m.b+18}" text-anchor="middle">${v.toFixed(1)}</text>`}
+  for(let v=0;v<=11;v+=2){g+=`<line class="gl" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end">${v}</text>`}
+  g+=`<line class="ax" x1="${m.l}" x2="${W-m.r}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  g+=`<text class="ttl" x="${(m.l+W-m.r)/2}" y="${H-10}" text-anchor="middle">Electronegativity difference |Δχ| (Pauling)</text>`;
+  g+=`<text class="ttl" transform="translate(16,${(m.t+H-m.b)/2}) rotate(-90)" text-anchor="middle">Dipole moment μ (D)</text>`;
+  let marks="", labels="";
+  // simple label placement: right of point, nudge if collides
+  const placed=[];
+  pts.sort((a,b)=>a.mu-b.mu).forEach((p,i)=>{const x=X(p.den),y=Y(p.mu);
+    marks+=`<g class="pt" data-i="${i}" style="fill:var(--series-${p.k+1})">${mark(KLASS[p.k].shape,x,y,6)}</g>`;
+    if(LABELS.has(p.mol)){let lx=x+9,ly=y+4,anchor="start";const OV={HBr:[-9,4,"end"],ClF:[-4,-11,"end"],HCl:[9,4,"start"]};if(OV[p.mol]){lx=x+OV[p.mol][0];ly=y+OV[p.mol][1];anchor=OV[p.mol][2];placed.push({x:lx,y:ly});labels+=`<text class="lbl" x="${lx}" y="${ly}" text-anchor="${anchor}">${p.mol}</text>`;}else{
+      for(let t=0;t<6;t++){if(placed.some(q=>Math.abs(q.y-ly)<12&&Math.abs(q.x-lx)<40)){ly+=(t%2?-1:1)*12*(t+1)}else break}
+      if(lx>W-70){lx=x-9;anchor="end"}
+      placed.push({x:lx,y:ly}); labels+=`<text class="lbl" x="${lx}" y="${ly}" text-anchor="${anchor}">${p.mol}</text>`}}
+  });
+  $("plotHost").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of dipole moment versus electronegativity difference for 39 diatomic molecules">${g}${labels}${marks}</svg>`;
+  const tip=$("tip");
+  $("plotHost").querySelectorAll(".pt").forEach(el=>{const p=pts[+el.dataset.i];
+    el.addEventListener("mouseenter",e=>{el.classList.add("on");
+      tip.innerHTML=`<b>${p.mol}</b> <span class="note">${p.state}</span><br>μ = ${p.mu.toFixed(3)} D${p.unct?" ± "+p.unct:""}<br>|Δχ| = ${p.den.toFixed(2)} &nbsp;·&nbsp; δ⁻ by χ: ${p.pred}<br><span class="note">${KLASS[p.k].name} · ${p.ref}</span>${p.note?`<br><span class="note">${p.note}</span>`:""}`;
+      tip.style.opacity=1});
+    el.addEventListener("mousemove",e=>{const w=tip.offsetWidth;tip.style.left=Math.min(e.clientX+14,innerWidth-w-8)+"px";tip.style.top=(e.clientY+14)+"px"});
+    el.addEventListener("mouseleave",()=>{el.classList.remove("on");tip.style.opacity=0});
+  });
+}
+
+// ===== Decompose & transfer =====
+const FIT_MOLS = [{"name":"Methyl fluoride","formula":"CH3F","mu":1.847,"ref":"1974Hel/Hel(II/6)","geom":"HCF 108.73 (CCCBDB)","bonds":[["Csp3–F",[0.01199,0.9272,0.37437]],["H–Csp3",[0.47596,0.59994,-0.64307]],["H–Csp3",[-0.94308,0.30778,0.12597]],["H–Csp3",[0.47868,-0.01421,0.87787]]],"group":0},{"name":"Difluoromethane","formula":"CH2F2","mu":1.97,"ref":"NSRDS-NBS10","geom":"HCH 112.80, FCF 108.49 (CCCBDB)","bonds":[["Csp3–F",[0.76023,0.64748,0.0532]],["Csp3–F",[-0.19347,-0.33817,0.92098]],["H–Csp3",[-0.2711,0.77038,0.57708]],["H–Csp3",[0.80786,-0.47744,0.34556]]],"group":0},{"name":"Trifluoromethane","formula":"CHF3","mu":1.645,"ref":"1951Sho/Sha:95","geom":"HCF 110.35 (CCCBDB)","bonds":[["Csp3–F",[-0.979,0.17951,0.09659]],["Csp3–F",[0.41043,0.74534,-0.52537]],["Csp3–F",[0.41302,-0.01322,0.91063]],["H–Csp3",[-0.14917,0.87421,0.46206]]],"group":0},{"name":"Methyl chloride","formula":"CH3Cl","mu":1.87,"ref":"NSRDS-NBS10","geom":"HCCl 108.16 (CCCBDB)","bonds":[["Csp3–Cl",[-0.39926,0.85438,0.33261]],["H–Csp3",[0.53795,0.75911,-0.36655]],["H–Csp3",[-0.94563,0.04834,-0.32164]],["H–Csp3",[0.03413,-0.00809,0.99938]]],"group":0},{"name":"Dichloromethane","formula":"CH2Cl2","mu":1.62,"ref":"1952Mye/Gwi:1420-1427","geom":"HCH 112.10, HCCl 108.15 (CCCBDB)","bonds":[["Csp3–Cl",[-0.41234,-0.76136,-0.5003]],["Csp3–Cl",[0.99566,0.01458,-0.09197]],["H–Csp3",[0.36064,-0.85297,0.37734]],["H–Csp3",[0.22221,0.10679,-0.96913]]],"group":0},{"name":"Chloroform","formula":"CHCl3","mu":1.04,"ref":"1970Rei/Wil:1418-1421","geom":"HCCl 107.98 (CCCBDB)","bonds":[["Csp3–Cl",[-0.94712,0.2598,-0.18835]],["Csp3–Cl",[0.58869,0.20576,-0.78173]],["Csp3–Cl",[0.3356,0.44986,0.82765]],["H–Csp3",[-0.02463,0.98781,-0.1537]]],"group":0},{"name":"Methyl bromide","formula":"CH3Br","mu":1.81,"ref":"1984Gra/Gub","geom":"HCBr 107.72 (CCCBDB)","bonds":[["Csp3–Br",[0.35086,0.39147,0.85067]],["H–Csp3",[0.54637,0.80333,-0.23694]],["H–Csp3",[-0.78501,0.25172,0.56603]],["H–Csp3",[0.55928,-0.6973,0.44831]]],"group":0},{"name":"Dibromomethane","formula":"CH2Br2","mu":1.43,"ref":"NSRDS-NBS10","geom":"HCH 110.90, HCBr 108.30 (CCCBDB)","bonds":[["Csp3–Br",[-0.34352,-0.70839,-0.61658]],["Csp3–Br",[0.99638,0.08128,-0.0249]],["H–Csp3",[0.39405,-0.8763,0.27718]],["H–Csp3",[0.27312,0.23544,-0.93272]]],"group":0},{"name":"Bromoform","formula":"CHBr3","mu":0.99,"ref":"NSRDS-NBS10","geom":"HCBr 107.20 (CCCBDB)","bonds":[["Csp3–Br",[-0.40706,0.75598,-0.51264]],["Csp3–Br",[-0.63334,-0.36627,0.68171]],["Csp3–Br",[0.87326,0.26149,0.41115]],["H–Csp3",[-0.18821,0.73328,0.65336]]],"group":0},{"name":"Methyl iodide","formula":"CH3I","mu":1.62,"ref":"NSRDS-NBS10","geom":"HCI 107.47 (CCCBDB)","bonds":[["Csp3–I",[0.74264,-0.44169,-0.50338]],["H–Csp3",[-0.19516,-0.98046,-0.02456]],["H–Csp3",[0.01428,0.39202,-0.91984]],["H–Csp3",[0.85035,0.19027,0.49062]]],"group":0},{"name":"Chlorofluoromethane","formula":"CH2FCl","mu":1.82,"ref":"NSRDS-NBS10","geom":"HCH 110.40, HCCl 109.40 (CCCBDB); others idealized","bonds":[["Csp3–F",[0.60677,0.16524,0.77751]],["Csp3–Cl",[0.32863,0.51795,-0.78977]],["H–Csp3",[-0.00311,0.9759,0.21819]],["H–Csp3",[0.9242,-0.30188,-0.23394]]],"group":0},{"name":"Chlorodifluoromethane","formula":"CHF2Cl","mu":1.42,"ref":"NSRDS-NBS10","geom":"HCF 108.99, FCF 107.00, HCCl 110.74 (CCCBDB)","bonds":[["Csp3–F",[0.90253,-0.33694,0.26815]],["Csp3–F",[-0.15182,-0.29039,-0.94479]],["Csp3–Cl",[-0.70644,-0.37599,0.59965]],["H–Csp3",[-0.00128,-0.99931,-0.03724]]],"group":0},{"name":"Dichlorofluoromethane","formula":"CHFCl2","mu":1.29,"ref":"NSRDS-NBS10","geom":"idealized tetrahedral","bonds":[["Csp3–F",[-0.58308,0.72186,0.37274]],["Csp3–Cl",[0.92626,0.09857,0.36378]],["Csp3–Cl",[0.02401,0.07248,-0.99708]],["H–Csp3",[0.36719,0.8929,-0.26056]]],"group":0},{"name":"Chlorotrifluoromethane","formula":"CF3Cl","mu":0.5,"ref":"NSRDS-NBS10","geom":"FCF 108.60 (CCCBDB)","bonds":[["Csp3–F",[-0.85243,0.52239,-0.02168]],["Csp3–F",[0.58205,0.36901,0.7246]],["Csp3–F",[0.46816,0.11677,-0.87589]],["Csp3–Cl",[-0.18984,-0.96768,0.16602]]],"group":0},{"name":"Trichlorofluoromethane","formula":"CFCl3","mu":0.46,"ref":"1970Rei/Wil:1418-1421","geom":"idealized tetrahedral","bonds":[["Csp3–F",[-0.58308,0.72186,0.37274]],["Csp3–Cl",[0.92626,0.09857,0.36378]],["Csp3–Cl",[0.02401,0.07248,-0.99708]],["Csp3–Cl",[-0.36719,-0.8929,0.26056]]],"group":0},{"name":"Bromotrifluoromethane","formula":"CF3Br","mu":0.639,"ref":"1980Cox/Dux:339","geom":"FCF 108.81 (CCCBDB)","bonds":[["Csp3–F",[0.4901,-0.86746,0.08556]],["Csp3–F",[-0.84937,-0.05631,0.52478]],["Csp3–F",[0.56713,0.72988,0.38163]],["Csp3–Br",[-0.20143,0.18789,-0.96131]]],"group":0},{"name":"Water","formula":"H2O","mu":1.857,"ref":"1991Sho/Ebe:5875-5882","geom":"HOH 104.48 (CCCBDB)","bonds":[["H–O",[-0.26765,0.43136,-0.86156]],["H–O",[0.61313,-0.74181,-0.27166]]],"group":1},{"name":"Ammonia","formula":"NH3","mu":1.476,"ref":"1970Shi:3572-3576","geom":"HNH 106.67 (CCCBDB)","bonds":[["H–N",[0.20452,-0.95017,-0.23524]],["H–N",[-0.21494,0.46788,-0.85726]],["H–N",[-0.84232,-0.0128,0.53882]]],"group":1},{"name":"Methanol","formula":"CH3OH","mu":1.672,"ref":"1981Sas/Lee:228-230","geom":"HOC 108.87, HCH 109.03 (CCCBDB)","bonds":[["Csp3–O",[0.96998,-0.0197,0.24238]],["H–O",[-0.18054,-0.71974,-0.67036]],["H–Csp3",[0.55477,0.24295,-0.79574]],["H–Csp3",[0.25539,-0.91643,0.30811]],["H–Csp3",[0.18055,0.65336,0.7352]]],"group":1},{"name":"Dimethyl ether","formula":"CH3OCH3","mu":1.302,"ref":"1963BLu/Kas:2753-2760","geom":"COC 111.7 (literature, assumed); methyl idealized","bonds":[["Csp3–O",[0.40561,-0.617,0.67438]],["Csp3–O",[0.5611,0.81596,-0.13922]],["H–Csp3",[0.3647,-0.80741,-0.46378]],["H–Csp3",[0.73982,0.47111,0.48033]],["H–Csp3",[-0.69891,-0.2807,0.65782]],["H–Csp3",[-0.56148,0.81701,0.13126]],["H–Csp3",[0.37003,-0.00444,-0.92901]],["H–Csp3",[0.75255,0.00338,0.65853]]],"group":1},{"name":"Methylamine","formula":"CH3NH2","mu":1.31,"ref":"NSRDS-NBS10","geom":"HNH 105.80, HNC 111.00, HCH 108.40 (CCCBDB)","bonds":[["Csp3–N",[0.53576,-0.83648,0.11516]],["H–N",[-0.0838,0.24166,-0.96674]],["H–N",[-0.93515,-0.1249,0.33149]],["H–Csp3",[-0.3508,-0.72518,-0.59249]],["H–Csp3",[-0.04452,-0.31701,0.94738]],["H–Csp3",[0.95855,0.16284,-0.23382]]],"group":1},{"name":"Dimethylamine","formula":"CH3NHCH3","mu":1.03,"ref":"NSRDS-NBS10","geom":"HNC 108.90 (CCCBDB); CNC 112.2 (literature, assumed)","bonds":[["Csp3–N",[0.74548,-0.23849,-0.6224]],["Csp3–N",[-0.86551,-0.42363,-0.26727]],["H–N",[0.23828,-0.30411,0.92236]],["H–Csp3",[-0.03546,0.59225,-0.80497]],["H–Csp3",[-0.09501,-0.95418,-0.28375]],["H–Csp3",[0.87596,0.12344,0.46632]],["H–Csp3",[-0.72748,0.68578,0.02165]],["H–Csp3",[0.08178,-0.37009,-0.92539]],["H–Csp3",[-0.2198,-0.73932,0.63647]]],"group":1},{"name":"Trimethylamine","formula":"N(CH3)3","mu":0.612,"ref":"NSRDS-NBS10","geom":"CNC 110.9 (literature, assumed)","bonds":[["Csp3–N",[0.20543,-0.94995,0.23535]],["Csp3–N",[-0.23835,0.08429,-0.96752]],["Csp3–N",[-0.73004,0.36137,0.58004]],["H–Csp3",[0.40727,-0.45851,-0.78987]],["H–Csp3",[0.64235,-0.02218,0.76609]],["H–Csp3",[-0.84419,-0.46925,0.25913]],["H–Csp3",[-0.97759,-0.17379,-0.11883]],["H–Csp3",[0.52391,-0.66555,-0.53157]],["H–Csp3",[0.21533,0.92362,-0.31711]],["H–Csp3",[-0.25882,-0.68827,0.67771]],["H–Csp3",[0.32222,0.82328,0.46731]],["H–Csp3",[-0.79345,0.22635,-0.56498]]],"group":1},{"name":"Formaldehyde","formula":"H2CO","mu":2.332,"ref":"2003The/Cal:8910-8915","geom":"HCH 116.13 (CCCBDB)","bonds":[["Csp2=O",[-0.60027,0.40491,-0.68973]],["H–Csp2",[-0.74959,0.61437,0.24631]],["H–Csp2",[0.11472,-0.18611,-0.97581]]],"group":2},{"name":"Acetaldehyde","formula":"CH3CHO","mu":2.75,"ref":"1978Tur/Cox:533-559","geom":"HCH 108.30 (CCCBDB); CCO 124 (literature, assumed)","bonds":[["Csp2=O",[0.43198,-0.60924,0.66499]],["H–Csp2",[-0.35689,-0.93019,0.08586]],["Csp3–Csp2",[0.7672,0.26448,0.58434]],["H–Csp3",[0.74486,0.38074,-0.54792]],["H–Csp3",[-0.28555,0.69025,0.66484]],["H–Csp3",[0.3508,-0.79173,0.50011]]],"group":2},{"name":"Acetone","formula":"CH3COCH3","mu":2.88,"ref":"NSRDS-NBS10","geom":"HCH 108.40 (CCCBDB); CCC 116.7 (literature, assumed)","bonds":[["Csp2=O",[0.74527,0.65018,0.14778]],["Csp3–Csp2",[0.80415,-0.23862,0.54443]],["Csp3–Csp2",[-0.02219,0.92081,-0.38937]],["H–Csp3",[-0.1832,-0.80788,0.56015]],["H–Csp3",[0.24914,0.75499,0.60656]],["H–Csp3",[0.77943,-0.19796,-0.59439]],["H–Csp3",[0.60774,0.06037,-0.79184]],["H–Csp3",[-0.92663,0.23367,-0.29455]],["H–Csp3",[0.29555,0.67397,0.67706]]],"group":2},{"name":"Hydrogen cyanide","formula":"HCN","mu":2.98,"ref":"NSRDS-NBS10","geom":"linear","bonds":[["Csp≡N",[-0.25396,0.96087,0.11063]],["H–Csp",[-0.25396,0.96087,0.11063]]],"group":3},{"name":"Acetonitrile","formula":"CH3CN","mu":3.919,"ref":"1974Hel/Hel(II/6)","geom":"HCH 109.50 (CCCBDB)","bonds":[["Csp≡N",[0.85864,-0.07295,0.50735]],["Csp3–Csp",[0.85857,-0.07287,0.50749]],["H–Csp3",[0.76699,0.00021,-0.64166]],["H–Csp3",[0.00478,-0.85068,0.52566]],["H–Csp3",[0.08558,0.7777,0.62278]]],"group":3},{"name":"Propyne","formula":"CH3CCH","mu":0.78,"ref":"NSRDS-NBS10","geom":"HCH 108.28 (CCCBDB)","bonds":[["H–Csp",[-0.96352,-0.01772,-0.26705]],["Csp3–Csp",[0.9633,0.01799,0.26784]],["H–Csp3",[0.59024,-0.10303,-0.80063]],["H–Csp3",[0.22534,0.86584,0.4467]],["H–Csp3",[0.20249,-0.7438,0.63699]]],"group":3},{"name":"Fluoroacetylene","formula":"HCCF","mu":0.73,"ref":"NSRDS-NBS10","geom":"linear","bonds":[["H–Csp",[0.86927,-0.17694,0.46159]],["Csp–F",[0.86927,-0.17694,0.46159]]],"group":3},{"name":"Chloroacetylene","formula":"HCCCl","mu":0.44,"ref":"1987Ebe/Han:1948","geom":"linear","bonds":[["H–Csp",[0.86927,-0.17694,0.46159]],["Csp–Cl",[0.86927,-0.17694,0.46159]]],"group":3},{"name":"Vinyl fluoride","formula":"CH2=CHF","mu":1.43,"ref":"NSRDS-NBS10","geom":"HCF 110.00, HCH 120.10 (CCCBDB)","bonds":[["H–Csp2",[-0.79626,0.0059,-0.60493]],["Csp2–F",[0.08857,0.73166,-0.67589]],["H–Csp2",[0.85874,-0.29891,-0.41621]],["H–Csp2",[-0.0882,0.93092,0.35441]]],"group":4},{"name":"Vinyl chloride","formula":"CH2=CHCl","mu":1.45,"ref":"NSRDS-NBS10","geom":"idealized 120°","bonds":[["H–Csp2",[-0.68389,-0.57496,0.44912]],["Csp2–Cl",[-0.1763,0.10461,0.97876]],["H–Csp2",[0.83551,0.40289,-0.37364]],["H–Csp2",[-0.32791,0.27669,0.90328]]],"group":4},{"name":"1,1-Difluoroethylene","formula":"CH2=CF2","mu":1.389,"ref":"1987Joh/Cho:317-332","geom":"FCF 110.60, HCH 122.00 (CCCBDB)","bonds":[["Csp2–F",[0.42226,0.75143,0.50701]],["Csp2–F",[0.60824,-0.32103,-0.72594]],["H–Csp2",[0.75024,-0.62455,-0.21696]],["H–Csp2",[0.12791,0.99132,0.03039]]],"group":4},{"name":"Fluorobenzene","formula":"C6H5F","mu":1.6,"ref":"1984Gra/Gub","geom":"regular hexagon (idealized)","bonds":[["Csp2–F",[-0.96658,-0.23818,0.0948]],["H–Csp2",[0.62532,-0.6246,-0.46781]],["H–Csp2",[-0.34127,-0.86278,-0.37302]],["H–Csp2",[-0.96658,-0.23818,0.0948]],["H–Csp2",[-0.62532,0.6246,0.46781]],["H–Csp2",[0.34127,0.86278,0.37302]]],"group":4},{"name":"Chlorobenzene","formula":"C6H5Cl","mu":1.78,"ref":"1963Poy:1962-1966","geom":"regular hexagon (idealized)","bonds":[["Csp2–Cl",[-0.96658,-0.23818,0.0948]],["H–Csp2",[0.62532,-0.6246,-0.46781]],["H–Csp2",[-0.34127,-0.86278,-0.37302]],["H–Csp2",[-0.96658,-0.23818,0.0948]],["H–Csp2",[-0.62532,0.6246,0.46781]],["H–Csp2",[0.34127,0.86278,0.37302]]],"group":4},{"name":"Fluoroethane","formula":"C2H5F","mu":1.96,"ref":"1955Kra/Dai:184","geom":"HCH 108.80, HCF 106.10 (CCCBDB)","bonds":[["Csp3–F",[0.0939,0.49796,-0.8621]],["H–Csp3",[0.61036,0.7693,0.18877]],["H–Csp3",[0.45553,-0.6253,-0.63363]],["H–Csp3",[-0.19636,0.91819,0.34405]],["H–Csp3",[-0.71404,-0.63008,0.30518]],["H–Csp3",[0.02479,0.0168,-0.99955]]],"group":4},{"name":"Chloroethane","formula":"C2H5Cl","mu":2.05,"ref":"NSRDS-NBS10","geom":"HCH 108.99 at CH2Cl (CCCBDB)","bonds":[["Csp3–Cl",[-0.86079,-0.48977,-0.13847]],["H–Csp3",[0.01928,-0.46788,-0.88358]],["H–Csp3",[-0.1197,-0.67838,0.7249]],["H–Csp3",[-0.42952,0.0365,-0.90232]],["H–Csp3",[0.34149,0.90777,0.24358]],["H–Csp3",[-0.67305,-0.29589,0.67783]]],"group":4}];
+const FIT_INIT = {"H–Csp3":0.4,"Csp3–F":1.4,"Csp3–Cl":1.5,"Csp3–Br":1.4,"Csp3–I":1.2,"H–O":1.5,"Csp3–O":0.7,
+  "H–N":1.3,"Csp3–N":0.2,"H–Csp2":0.4,"Csp2=O":2.3,"Csp3–Csp2":0.3,"H–Csp":0.5,"Csp≡N":3.5,
+  "Csp3–Csp":0.5,"Csp2–F":1.4,"Csp2–Cl":1.4,"Csp–F":1.0,"Csp–Cl":1.0};
+const FIT_ORDER = Object.keys(FIT_INIT);
+const REF_LABELS = ["H–Csp3","H–Csp2","H–Csp"];
+const SMYTH = {"Csp3–F":1.51,"Csp3–Cl":1.56,"Csp3–Br":1.48,"Csp3–I":1.29,"H–O":1.53,"Csp3–O":0.86,"H–N":1.31,"Csp3–N":0.22,"Csp2=O":2.40,"Csp≡N":3.60};
+const FIT_GROUPS = ["Halomethanes","O and N compounds","Carbonyls","Nitriles & alkynes","Vinyl, aryl & ethyl halides"];
+FIT_MOLS.forEach((m,i)=>{m.i=i;m.types=[...new Set(m.bonds.map(b=>b[0]))];});
+
+const fitState = {train:new Set(FIT_MOLS.map(m=>m.i)), ref:{"H–Csp3":0.30,"H–Csp2":0.30,"H–Csp":0.30}, loo:null};
+
+function solveLin(A,b){const n=b.length,M=A.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];
+    if(Math.abs(M[c][c])<1e-14)return null;for(let r=0;r<n;r++){if(r===c)continue;const f=M[r][c]/M[c][c];for(let k=c;k<=n;k++)M[r][k]-=f*M[c][k]}}
+  return M.map((r,i)=>r[n]/r[i]);}
+function invert(A){const n=A.length,cols=[];for(let j=0;j<n;j++){const e=Array(n).fill(0);e[j]=1;const x=solveLin(A,e);if(!x)return null;cols.push(x)}return A.map((_,i)=>cols.map(c=>c[i]));}
+function jacobiEig(A){const n=A.length,a=A.map(r=>[...r]),V=a.map((_,i)=>a.map((_,j)=>i===j?1:0));
+  for(let sweep=0;sweep<100;sweep++){let off=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)off+=a[i][j]**2;if(off<1e-22)break;
+    for(let p=0;p<n;p++)for(let q=p+1;q<n;q++){if(Math.abs(a[p][q])<1e-300)continue;const th=(a[q][q]-a[p][p])/(2*a[p][q]);
+      const t=Math.sign(th||1)/(Math.abs(th)+Math.sqrt(th*th+1)),c=1/Math.sqrt(t*t+1),s=t*c;
+      for(let k=0;k<n;k++){const akp=a[k][p],akq=a[k][q];a[k][p]=c*akp-s*akq;a[k][q]=s*akp+c*akq}
+      for(let k=0;k<n;k++){const apk=a[p][k],aqk=a[q][k];a[p][k]=c*apk-s*aqk;a[q][k]=s*apk+c*aqk}
+      for(let k=0;k<n;k++){const vkp=V[k][p],vkq=V[k][q];V[k][p]=c*vkp-s*vkq;V[k][q]=s*vkp+c*vkq}}}
+  return {vals:a.map((r,i)=>r[i]),vecs:V};}
+
+function molVec(m,vals){const v=[0,0,0];for(const [lab,u] of m.bonds){const k=vals[lab]||0;v[0]-=k*u[0];v[1]-=k*u[1];v[2]-=k*u[2]}return v;}
+const norm=v=>Math.hypot(v[0],v[1],v[2]);
+
+function runFit(ms,ref){
+  const labels=FIT_ORDER.filter(l=>ms.some(m=>m.types.includes(l)));
+  const free=labels.filter(l=>!(l in ref));
+  if(!free.length) return {labels,free,vals:{...ref},resid:[],ok:true};
+  const toVals=p=>{const v={...ref};free.forEach((l,k)=>v[l]=p[k]);return v};
+  const W=ms.map(m=>free.map(l=>{const w=[0,0,0];for(const [lab,u] of m.bonds)if(lab===l){w[0]-=u[0];w[1]-=u[1];w[2]-=u[2]}return w}));
+  const evalR=p=>{const vals=toVals(p);const r=[],J=[];ms.forEach((m,i)=>{const v=molVec(m,vals),n=norm(v)||1e-12;r.push(n-m.mu);J.push(W[i].map(w=>(v[0]*w[0]+v[1]*w[1]+v[2]*w[2])/n))});return {r,J}};
+  let p=free.map(l=>FIT_INIT[l]),lam=1e-3,{r,J}=evalR(p),cost=r.reduce((a,x)=>a+x*x,0);
+  for(let it=0;it<500;it++){
+    const n=free.length,JtJ=Array.from({length:n},(_,a)=>Array.from({length:n},(_,b)=>J.reduce((s,row)=>s+row[a]*row[b],0)));
+    const g=Array.from({length:n},(_,a)=>J.reduce((s,row,i)=>s+row[a]*r[i],0));
+    const A=JtJ.map((row,a)=>row.map((x,b)=>a===b?x*(1+lam)+1e-12:x));
+    const d=solveLin(A,g.map(x=>-x)); if(!d){lam*=10;continue}
+    const pn=p.map((x,k)=>x+d[k]),e=evalR(pn),cn=e.r.reduce((a,x)=>a+x*x,0);
+    if(cn<cost){const done=(cost-cn)<1e-15*(1+cost);p=pn;r=e.r;J=e.J;cost=cn;lam=Math.max(lam/10,1e-12);if(done)break}else{lam*=10;if(lam>1e12)break}}
+  const n=free.length,JtJ=Array.from({length:n},(_,a)=>Array.from({length:n},(_,b)=>J.reduce((s,row)=>s+row[a]*row[b],0)));
+  const eig=jacobiEig(JtJ),emax=Math.max(...eig.vals),null_=[];
+  eig.vals.forEach((ev,k)=>{if(ev<1e-8*emax+1e-12){const vec=eig.vecs.map(r=>r[k]);null_.push(free.map((l,j)=>[l,vec[j]]).filter(x=>Math.abs(x[1])>0.15).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])))}});
+  const dof=ms.length-n,s2=dof>0?cost/dof:NaN,inv=null_.length?null:invert(JtJ);
+  const se={};free.forEach((l,k)=>se[l]=inv&&dof>0?Math.sqrt(Math.max(inv[k][k]*s2,0)):NaN);
+  const count={};labels.forEach(l=>count[l]=ms.filter(m=>m.types.includes(l)).length);
+  return {labels,free,vals:toVals(p),se,resid:r,rms:Math.sqrt(cost/ms.length),null:null_,dof,count};
+}
+function predict(m,fit){const miss=m.types.filter(t=>!(t in fit.vals));if(miss.length)return {miss};return {mu:norm(molVec(m,fit.vals))};}
+
+function fitPanelHTML(){
+  return `<div class="fitgrid">
+  <aside class="fitside">
+    <h3>Reference C–H values (D)</h3>
+    <p class="note">The data can't fix these: shifting equal moment into every bond of a carbon leaves all molecular dipoles unchanged. Positive means C⁻–H⁺.</p>
+    ${REF_LABELS.map(l=>`<label class="refrow">${l}<input type="number" step="0.05" data-ref="${l}" value="${fitState.ref[l]}"></label>`).join("")}
+    <h3 style="margin-top:16px">Training set <span class="note" id="trainCount"></span></h3>
+    <div class="bar" style="margin:6px 0"><button class="btn sm" id="selAll">All</button><button class="btn sm" id="selNone">None</button></div>
+    ${FIT_GROUPS.map((g,gi)=>`<div class="mgroup"><label class="ghead"><input type="checkbox" data-group="${gi}"> ${g}</label>
+      ${FIT_MOLS.filter(m=>m.group===gi).map(m=>`<label class="mrow" title="${m.name} · μ = ${m.mu} D · ${m.ref}"><input type="checkbox" data-mol="${m.i}"> ${m.formula}</label>`).join("")}</div>`).join("")}
+  </aside>
+  <section class="fitmain">
+    <div id="fitWarn"></div>
+    <h3>Fitted bond moments</h3>
+    <div id="fitBonds"></div>
+    <h3>Transfer: predictions for molecules not in the training set</h3>
+    <p class="note">Untick molecules to hold them out. Their dipoles are then predicted purely from bond moments fitted to the others.</p>
+    <div id="fitPred"></div>
+    <div class="bar" style="margin-top:14px"><button class="btn" id="looBtn">Run leave-one-out test on the training set</button><span class="note" id="looSum"></span></div>
+    <div id="fitLoo"></div>
+    <h3>Fit to the training set</h3>
+    <div id="fitResid"></div>
+    <h3>How this works</h3>
+    <ul class="note" style="padding-left:18px;margin:4px 0">
+      <li><strong>Model.</strong> Each molecular dipole is treated as the vector sum of its bond moments, <strong>μ</strong> = Σ m<sub>b</sub> <strong>ê</strong><sub>b</sub>, with one moment per bond type. Homonuclear bonds between same-hybridization carbons (C–C, C=C, C≡C, aromatic) are set to zero.</li>
+      <li><strong>Data.</strong> Gas-phase experimental dipole magnitudes from the NIST CCCBDB experimental list; each row's original reference is shown.</li>
+      <li><strong>Geometry.</strong> Only bond directions matter, so each molecule is built from bond angles: CCCBDB experimental angles where available (listed per molecule), otherwise standard values (tetrahedral, 120°, 180°, or a literature value marked "assumed").</li>
+      <li><strong>Fit.</strong> Experiments give |μ| but not its direction, so the fit minimises Σ(|Σ m<sub>b</sub><strong>ê</strong><sub>b</sub>| − μ<sub>exp</sub>)² by Levenberg–Marquardt, starting from textbook polarities (e.g. C⁺–F⁻). Combinations the data can't determine are found from the eigenvalues of JᵀJ and reported above.</li>
+      <li><strong>Limits.</strong> Lone pairs and induction are absorbed into the bond values, so they transfer only between similar environments. The poly-halomethanes (CHCl₃, CF₃Cl, CH₃Br) are the classic cases where additivity breaks down.</li>
+    </ul>
+  </section></div>`;
+}
+const f3=x=>Number.isFinite(x)?x.toFixed(3):"—", f2s=x=>Number.isFinite(x)?(x>=0?"+":"−")+Math.abs(x).toFixed(3):"—";
+function bar(d){const w=Math.min(Math.abs(d)/0.6,1)*60;return `<span class="dbar"><span style="width:${w}px;${d<0?"right:50%":"left:50%"}"></span></span>`}
+function renderFit(){
+  const ms=FIT_MOLS.filter(m=>fitState.train.has(m.i));
+  $("trainCount").textContent=`(${ms.length} of ${FIT_MOLS.length})`;
+  document.querySelectorAll("[data-mol]").forEach(cb=>cb.checked=fitState.train.has(+cb.dataset.mol));
+  document.querySelectorAll("[data-group]").forEach(cb=>{const g=FIT_MOLS.filter(m=>m.group===+cb.dataset.group),k=g.filter(m=>fitState.train.has(m.i)).length;cb.checked=k===g.length;cb.indeterminate=k>0&&k<g.length});
+  if(!ms.length){$("fitBonds").innerHTML=`<p class="note">Select at least one training molecule.</p>`;["fitPred","fitResid","fitWarn","fitLoo"].forEach(id=>$(id).innerHTML="");return}
+  const F=runFit(ms,fitState.ref); fitState.last=F;
+  let warn="";
+  if(F.null&&F.null.length) warn+=`<div class="warnbox"><strong>Not determined by these data.</strong> ${F.null.length} combination${F.null.length>1?"s":""} of bond moments can change without changing any training dipole, so the values involved are arbitrary: ${F.null.map(c=>c.map(([l,v])=>`${v>0?"+":"−"}${Math.abs(v).toFixed(2)}·${l}`).join(" ")).join("; ")}. Add molecules that contain these bonds, or fix one of them as a reference.</div>`;
+  if(F.dof<=0) warn+=`<div class="warnbox">As many unknowns as molecules (or more): the fit is exact and there is no test of additivity.</div>`;
+  $("fitWarn").innerHTML=warn;
+  $("fitBonds").innerHTML=`<table><thead><tr><th>Bond</th><th class="num">Moment (D)</th><th class="num">± (1σ)</th><th class="num">Molecules</th><th class="num">Smyth-type table</th></tr></thead><tbody>${
+    F.labels.map(l=>{const isRef=l in fitState.ref;return `<tr><td class="bond">${l}</td><td class="num">${f3(F.vals[l])}</td><td class="num">${isRef?'<span class="pill">reference</span>':f3(F.se[l])}</td><td class="num">${F.count[l]}</td><td class="num">${SMYTH[l]!=null?SMYTH[l].toFixed(2):"—"}</td></tr>`}).join("")}</tbody></table>
+    <p class="note">Positive means the second-written atom is the negative end (e.g. Csp3–F: F⁻). Uncertainties come from the fit residuals and assume additivity is the only model; ${Number.isFinite(F.rms)?`RMS residual ${F.rms.toFixed(3)} D over ${ms.length} molecules, ${F.dof} degrees of freedom.`:""}</p>`;
+  const held=FIT_MOLS.filter(m=>!fitState.train.has(m.i));
+  $("fitPred").innerHTML=held.length?`<table><thead><tr><th>Molecule</th><th class="num">Predicted μ</th><th class="num">Experiment</th><th class="num">Error</th><th></th><th>Geometry</th></tr></thead><tbody>${held.map(m=>{const P=predict(m,F);
+      return P.miss?`<tr><td class="bond">${m.formula}</td><td colspan="5" class="note">Can't predict: no training molecule contains ${P.miss.join(", ")}</td></tr>`:
+      `<tr><td class="bond" title="${m.name}">${m.formula}</td><td class="num">${f3(P.mu)}</td><td class="num">${f3(m.mu)}</td><td class="num">${f2s(P.mu-m.mu)}</td><td>${bar(P.mu-m.mu)}</td><td class="note">${m.geom}</td></tr>`}).join("")}</tbody></table>`:`<p class="note">Every molecule is in the training set. Untick some to test transfer.</p>`;
+  $("fitResid").innerHTML=`<table><thead><tr><th>Molecule</th><th class="num">Fitted μ</th><th class="num">Experiment</th><th class="num">Residual</th><th></th><th>Exp. reference</th></tr></thead><tbody>${ms.map((m,i)=>`<tr><td class="bond" title="${m.name}">${m.formula}</td><td class="num">${f3(m.mu+F.resid[i])}</td><td class="num">${f3(m.mu)}</td><td class="num">${f2s(F.resid[i])}</td><td>${bar(F.resid[i])}</td><td class="note">${m.ref}</td></tr>`).join("")}</tbody></table>`;
+  $("fitLoo").innerHTML="";$("looSum").textContent="";
+}
+function runLoo(){
+  const ms=FIT_MOLS.filter(m=>fitState.train.has(m.i));const rows=[],errs=[];
+  ms.forEach(m=>{const F=runFit(ms.filter(x=>x!==m),fitState.ref);const P=predict(m,F);
+    if(P.miss||(F.null&&F.null.length&&F.null.some(c=>c.some(([l])=>m.types.includes(l))))){rows.push(`<tr><td class="bond">${m.formula}</td><td colspan="4" class="note">${P.miss?"Can't predict: only this molecule contains "+P.miss.join(", "):"Not determined without this molecule"}</td></tr>`);return}
+    const d=P.mu-m.mu;errs.push(d);rows.push(`<tr><td class="bond" title="${m.name}">${m.formula}</td><td class="num">${f3(P.mu)}</td><td class="num">${f3(m.mu)}</td><td class="num">${f2s(d)}</td><td>${bar(d)}</td></tr>`)});
+  const rms=Math.sqrt(errs.reduce((a,x)=>a+x*x,0)/errs.length),mae=errs.reduce((a,x)=>a+Math.abs(x),0)/errs.length;
+  $("looSum").textContent=errs.length?`RMS transfer error ${rms.toFixed(3)} D, mean absolute ${mae.toFixed(3)} D (${errs.length} molecules)`:"";
+  $("fitLoo").innerHTML=`<p class="note">Each molecule is removed in turn, the bond moments are refitted to the rest, and its dipole is predicted. This measures how well the moments transfer.</p><table><thead><tr><th>Left out</th><th class="num">Predicted μ</th><th class="num">Experiment</th><th class="num">Error</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
+let fitBuilt=false;
+function buildFit(){ if(fitBuilt) return; fitBuilt=true;
+  $("fitView").innerHTML=fitPanelHTML();
+  $("fitView").addEventListener("change",e=>{const t=e.target;
+    if(t.dataset.mol!=null){t.checked?fitState.train.add(+t.dataset.mol):fitState.train.delete(+t.dataset.mol)}
+    else if(t.dataset.group!=null){FIT_MOLS.filter(m=>m.group===+t.dataset.group).forEach(m=>t.checked?fitState.train.add(m.i):fitState.train.delete(m.i))}
+    else if(t.dataset.ref!=null){const v=parseFloat(t.value);if(Number.isFinite(v))fitState.ref[t.dataset.ref]=v}
+    renderFit()});
+  $("selAll").onclick=()=>{FIT_MOLS.forEach(m=>fitState.train.add(m.i));renderFit()};
+  $("selNone").onclick=()=>{fitState.train.clear();renderFit()};
+  $("looBtn").onclick=runLoo;
+  renderFit();
+}
+
+let view="bonds", sortKey=null, sortDir=1;
+const $=id=>document.getElementById(id);
+
+function currentRows(){
+  const V=VIEWS[view], q=plain($("q").value.trim().toLowerCase()), f=$("setFilter").value;
+  let rows=V.rows().filter(r=>(!q||plain(V.search(r).toLowerCase()).includes(q)) && (V.nofilter||!f||r[V.filterKey||"src"]===f));
+  if(sortKey){rows=[...rows].sort((a,b)=>{const x=a[sortKey],y=b[sortKey];if(x===null)return 1;if(y===null)return -1;return (typeof x==="number"?x-y:String(x).localeCompare(String(y)))*sortDir})}
+  return rows;
+}
+function render(){
+  const V=VIEWS[view], rows=currentRows();
+  let h="<table><thead><tr>"+V.cols.map(c=>`<th class="${c.num?"num":""}" data-k="${c.k}">${c.l}${sortKey===c.k?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")+"</tr></thead><tbody>";
+  h+=rows.map(r=>"<tr>"+V.cols.map(c=>`<td class="${c.num?"num ":""}${c.cls||""}">${c.fmt?c.fmt(r[c.k],r):(r[c.k]??"")}</td>`).join("")+"</tr>").join("");
+  h+="</tbody></table>";
+  $("tableHost").innerHTML=h;
+  $("count").textContent=`${rows.length} row${rows.length===1?"":"s"}`+(view==="compare"?" · spreads of 0.15 D or more are highlighted":"");
+  $("tableHost").querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;sortDir=sortKey===k?-sortDir:1;sortKey=k;render()});
+  const fk=V.filterKey||"src", fl=V.filterLabel||(k=>SOURCES[k].short);
+  const fsets=[...new Set(V.rows().map(r=>r[fk]).filter(Boolean))];
+  const sel=$("setFilter"), cur=sel.value;
+  sel.innerHTML=`<option value="">${V.allLabel||"All source sets"}</option>`+fsets.map(s=>`<option value="${s}">${fl(s)}</option>`).join("");
+  sel.value=fsets.includes(cur)?cur:""; sel.style.display=V.nofilter?"none":"";
+}
+function toCSV(){
+  const V=VIEWS[view], rows=currentRows();
+  const esc=s=>{s=String(s??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s};
+  const head=V.cols.map(c=>esc(plain(c.l))); if(!V.nofilter&&view!=="compare") head.push("Source citation","Source URL");
+  const lines=[head.join(",")];
+  rows.forEach(r=>{const cells=V.cols.map(c=>{let v=r[c.k];if(c.raw)v=c.raw(v);else if(typeof v==="number")v=v;return esc(plain(String(v??"")))});
+    if(!V.nofilter&&r.src){cells.push(esc(SOURCES[r.src].cite),esc(SOURCES[r.src].url))} lines.push(cells.join(","))});
+  return lines.join("\n");
+}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
+$("csvBtn").onclick=async()=>{const csv=toCSV();$("csvText").value=csv;
+  try{await navigator.clipboard.writeText(csv);toast("CSV copied");$("csvBox").classList.add("hidden")}
+  catch(e){$("csvBox").classList.remove("hidden");$("csvText").select()}};
+$("q").oninput=render; $("setFilter").onchange=render;
+
+function show(v){
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.view===v));
+  $("plotView").classList.toggle("hidden",v!=="plot");$("fitView").classList.toggle("hidden",v!=="fit");
+  if(v==="fit"){$("tableView").classList.add("hidden");$("sourcesView").classList.add("hidden");buildFit();return}
+  if(v==="sources"||v==="plot"){$("tableView").classList.add("hidden");$("sourcesView").classList.toggle("hidden",v!=="sources");if(v==="plot")buildPlot();return}
+  $("tableView").classList.remove("hidden");$("sourcesView").classList.add("hidden");
+  view=v;sortKey=null;$("diatNote").classList.toggle("hidden",v!=="diatomics");$("q").value="";$("csvBox").classList.add("hidden");render();
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{show(t.dataset.view);try{history.replaceState(null,"","#"+t.dataset.view)}catch(e){}});
+$("srcList").innerHTML=Object.entries(SOURCES).map(([k,s])=>`<li><strong>${s.name}</strong>. ${s.cite} <a href="${s.url}">Link</a></li>`).join("");
+const h=location.hash.slice(1); show(VIEWS[h]||h==="sources"||h==="plot"||h==="fit"?h:"bonds");
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(VIEWS[h]||h==="sources"||h==="plot"||h==="fit")show(h)});
+</script>
+</body>
+</html>
